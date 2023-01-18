@@ -1,1 +1,1 @@
-../ar5gmslr.py
+../../python/ar5_gmslr.py
