@@ -1,7 +1,7 @@
 # ar5gmslr
 
-This repository contains a program called `ar5gmslr.py`, written in the [Python
-3](https://docs.python.org/3) language, to compute projections of annual-mean
+This repository contains a program called `ar5gmslr.py`, written as a the [Python
+3](https://docs.python.org/3) module, to compute projections of annual-mean
 global-mean sea-level rise (GMSLR) for the years 2006-2100 with respect to the
 time-mean of 1996-2005, given annual-mean global-mean projections of surface
 air temperature change (CMIP[56] variable `tas`) and thermosteric sea-level
@@ -55,12 +55,12 @@ form expected by the program.
 [Hermans et al.  (2021)](10.1029/2020GL092064).
 
 The program uses the freely available [`cf-python`
-library](https://ncas-cms.github.io/cf-python) for input and output of netCDF
+package](https://ncas-cms.github.io/cf-python) for input and output of netCDF
 files and for convenience in manipulating the data in memory. To run the
 program for AR5 input using all defaults:
 
 ```
-import ar5gmslr # includes 'import cf' for the cf-python library
+import ar5gmslr # includes 'import cf' for the cf-python package
 ar5gmslr.project('ar5_input') # directory in this repository
 ```
 
