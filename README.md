@@ -8,9 +8,17 @@ time-mean of 1996-2005, given annual-mean global-mean projections of surface
 air temperature change (CMIP[56] variable `tas`) and thermosteric sea-level
 rise (CMIP[56] variable `zostoga`), contained in netCDF files following the [CF
 convention](http://cfconventions.org). For each quantity the program requires
-input timeseries of values 2006-2100 of the best estimate and uncertainty,
+input timeseries of values 2006-2100 of either
+
+* the best estimate and uncertainty,
 which are assumed to be the mean and standard deviation of a normal
-distribution. By default the program uses the methods of Fifth Assessment
+distribution, as in AR5, or
+
+* each member of an ensemble. In this case, the sources of the ensemble members
+are assumed to correspond for the two quantities, and the members are sampled
+randomly with equal probability.
+
+By default the program uses the methods of Fifth Assessment
 Report of the Intergovernmental Panel on Climate Change (AR5) Working Group I
 (detailed in the [supplementary online
 material](https://www.ipcc.ch/site/assets/uploads/2018/07/WGI_AR5.Chap_.13_SM.1.16.14.pdf)
