@@ -1,6 +1,6 @@
 # ar5gmslr
 
-This repository contains a program called `ar5gmslr.py`, written as a the [Python
+This repository contains a program called `ar5gmslr.py`, written as a [Python
 3](https://docs.python.org/3) module, to compute projections of annual-mean
 global-mean sea-level rise (GMSLR) for the years 2006-2100 with respect to the
 time-mean of 1996-2005, given annual-mean global-mean projections of surface
