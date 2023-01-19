@@ -10,6 +10,16 @@ time-mean of 1996&ndash;2005, given annual global-mean projections of surface
 air temperature change (CMIP[56] variable `tas`) and thermosteric sea-level
 rise (CMIP[56] variable `zostoga`).
 
+By default the program uses the methods of Fifth Assessment
+Report of the Intergovernmental Panel on Climate Change (AR5) Working Group I
+(detailed in the [supplementary online
+material](https://www.ipcc.ch/site/assets/uploads/2018/07/WGI_AR5.Chap_.13_SM.1.16.14.pdf)
+of [chapter 13, Church et al.,
+2013](http://dx.doi.org/10.1017/CBO9781107415324.026)).  Given AR5 input, the
+program reproduces the AR5 mean and likely ranges to within 0.01 metres in all
+components and the total, which is the precision stated by the AR5 for these
+statistics.
+
 The input should be supplied in netCDF files following the [CF
 convention](http://cfconventions.org)
 with file names and contents
@@ -28,16 +38,6 @@ distribution, as in AR5, or
 * each member of an ensemble. In this case, the sources of the ensemble members
 are assumed to correspond for the two quantities, and the members are sampled
 randomly with equal probability.
-
-By default the program uses the methods of Fifth Assessment
-Report of the Intergovernmental Panel on Climate Change (AR5) Working Group I
-(detailed in the [supplementary online
-material](https://www.ipcc.ch/site/assets/uploads/2018/07/WGI_AR5.Chap_.13_SM.1.16.14.pdf)
-of [chapter 13, Church et al.,
-2013](http://dx.doi.org/10.1017/CBO9781107415324.026)).  Given AR5 input, the
-program reproduces the AR5 mean and likely ranges to within 0.01 metres in all
-components and the total, which is the precision stated by the AR5 for these
-statistics.
 
 The program also contains optional alternative methods for projecting the
 contribution to GMSLR arising from changes in
