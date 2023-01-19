@@ -84,7 +84,7 @@ import ar5gmslr # includes 'import cf' for the cf-python package
 ar5gmslr.project('ar5_input') # directory in this repository
 ```
 
-The [`stdout` from this process](ar5gmslr_ar5_list.txt) is consistent (within 0.01 m)
+The [`stdout` from this process](./ar5gmslr_ar5_list.txt) is consistent (within 0.01 m)
 with Table 13.SM.1 of [AR5 chapter 13](https://www.ipcc.ch/site/assets/uploads/2018/07/WGI_AR5.Chap_.13_SM.1.16.14.pdf).
 See the definition of the `project` function for the optional behaviours.
 
