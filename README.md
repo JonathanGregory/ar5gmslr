@@ -3,12 +3,23 @@
 This repository provides a [Python
 3](https://docs.python.org/3) module called [`ar5gmslr.py`](ar5gmslr.py), 
 containing a program to compute projections of annual-mean
-global-mean sea-level rise (GMSLR) for the years 2006-2100 with respect to the
-time-mean of 1996-2005, given annual-mean global-mean projections of surface
+global-mean sea-level rise (GMSLR) for the ends of the calendar years 2006&ndash;2009 
+(or equivalently at the start of the years 2007&ndash;2100)
+with respect to the
+time-mean of 1996&ndash;2005, given annual global-mean projections of surface
 air temperature change (CMIP[56] variable `tas`) and thermosteric sea-level
-rise (CMIP[56] variable `zostoga`), contained in netCDF files following the [CF
-convention](http://cfconventions.org). For each quantity the program requires
-input timeseries of values 2006-2100 of either
+rise (CMIP[56] variable `zostoga`).
+
+The input should be supplied in netCDF files following the [CF
+convention](http://cfconventions.org)
+with file names and contents
+as specified in the inline documentation of the `project` function.
+The `tas` values should be time-means of calendar
+years 2006&ndash;2099, and `zostoga` should be values that apply at the year-ends.
+The program checks that the time-coordinates and time-bounds are as expected,
+and aborts if they do not conform.
+For each quantity the program requires
+input timeseries of either
 
 * the best estimate and uncertainty,
 which are assumed to be the mean and standard deviation of a normal
@@ -41,7 +52,7 @@ differs from the AR5 scheme in being scenario-dependent.
 according to the AR5 formula, recalibrated either according to results of
 GlacierMIP [(Hock et al., 2019)](http://dx.doi.org/10.1017/jog.2019.22) or
 GlacierMIP2 [(Marzeion et al.,
-2020)](http://dx.doi.org/10.1029/2019EF001470). The GlacierMIP results are based on
+2020)](http://dx.doi.org/10.1029/2019EF001470). The GlacierMIP* results are based on
 more and later versions of global glacier models than were available at
 the time of the AR5.
 
@@ -73,4 +84,6 @@ import ar5gmslr # includes 'import cf' for the cf-python package
 ar5gmslr.project('ar5_input') # directory in this repository
 ```
 
+The [`stdout` from this process](ar5gmslr_ar5_list.txt) is consistent (within 0.01 m)
+with Table 13.SM.1 of [AR5 chapter 13](https://www.ipcc.ch/site/assets/uploads/2018/07/WGI_AR5.Chap_.13_SM.1.16.14.pdf).
 See the definition of the `project` function for the optional behaviours.
