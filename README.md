@@ -89,5 +89,5 @@ with Table 13.SM.1 of [AR5 chapter 13](https://www.ipcc.ch/site/assets/uploads/2
 See the definition of the `project` function for the optional behaviours.
 
 The program was originally written by [Jonathan
-Gregory](www.met.rdg.ac.uk/~jonathan) in IDL for the works cited above, and
+Gregory](https://www.met.rdg.ac.uk/~jonathan) in IDL for the works cited above, and
 later converted by him to Python.
