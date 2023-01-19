@@ -1,7 +1,7 @@
 # ar5gmslr
 
 This repository provides a [Python
-3](https://docs.python.org/3) module called `ar5gmslr.py`, 
+3](https://docs.python.org/3) module called [`ar5gmslr.py`](ar5gmslr.py), 
 containing a program to compute projections of annual-mean
 global-mean sea-level rise (GMSLR) for the years 2006-2100 with respect to the
 time-mean of 1996-2005, given annual-mean global-mean projections of surface
@@ -58,9 +58,9 @@ of each contribution and the total.
 This repository also provides directories containing input timeseries in the
 form expected by the program.
 
-* `ar5_input` for projections based on CMIP5 AOGCMs, as used in the AR5.
+* [`ar5_input`](ar5_input) for projections based on CMIP5 AOGCMs, as used in the AR5.
 
-* `cmip6_input` for projections based on CMIP6 AOGCMs, as used by
+* [`cmip6_input`](cmip6_input) for projections based on CMIP6 AOGCMs, as used by
 [Hermans et al.  (2021)](10.1029/2020GL092064).
 
 The program uses the freely available [`cf-python`
