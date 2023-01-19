@@ -64,7 +64,7 @@ of each contribution and the total. (The AR5 interprets the 5-95% range of
 GMSLR model projections as the assessed "likely range".)
 
 * annual timeseries of the Monte Carlo ensemble members (by default 450,000)
-of each contribution and the total.
+of each contribution and the total, arranged in the same order for each.
 
 This repository also provides directories containing input timeseries in the
 form expected by the program.
