@@ -1,7 +1,7 @@
 # ar5gmslr
 
 This repository provides a [Python
-3](https://docs.python.org/3) module called [`ar5gmslr.py`](ar5gmslr.py), 
+3](https://docs.python.org/3) module called [`ar5gmslr.py`](./ar5gmslr.py.txt), 
 containing a program to compute projections of annual-mean
 global-mean sea-level rise (GMSLR) for the ends of the calendar years 2006&ndash;2009 
 (or equivalently at the start of the years 2007&ndash;2100)
@@ -69,7 +69,7 @@ of each contribution and the total.
 This repository also provides directories containing input timeseries in the
 form expected by the program.
 
-* [`ar5_input`](ar5_input) for projections based on CMIP5 AOGCMs, as used in the AR5.
+* [`ar5_input`](./ar5_input) for projections based on CMIP5 AOGCMs, as used in the AR5.
 
 * [`cmip6_input`](cmip6_input) for projections based on CMIP6 AOGCMs, as used by
 [Hermans et al.  (2021)](10.1029/2020GL092064).
@@ -87,3 +87,7 @@ ar5gmslr.project('ar5_input') # directory in this repository
 The [`stdout` from this process](ar5gmslr_ar5_list.txt) is consistent (within 0.01 m)
 with Table 13.SM.1 of [AR5 chapter 13](https://www.ipcc.ch/site/assets/uploads/2018/07/WGI_AR5.Chap_.13_SM.1.16.14.pdf).
 See the definition of the `project` function for the optional behaviours.
+
+The program was originally written by [Jonathan
+Gregory](www.met.rdg.ac.uk/~jonathan) in IDL for the works cited above, and
+later converted by him to Python.
