@@ -85,7 +85,7 @@ ar5gmslr.project('ar5_input') # directory in this repository
 ```
 
 This process takes about 2.5 minutes on a 3.4 GHz processor with 8 Gbyte RAM.
-The [`stdout`](https://github.com/JonathanGregory/ar5gmslr/blob/main/ar5gmsl_ar5_list.txt) is consistent (within 0.01 m)
+The [`stdout`](https://github.com/JonathanGregory/ar5gmslr/blob/main/ar5gmslr_ar5_list.txt) is consistent (within 0.01 m)
 with Table 13.SM.1 of [AR5 chapter 13](https://www.ipcc.ch/site/assets/uploads/2018/07/WGI_AR5.Chap_.13_SM.1.16.14.pdf).
 See the definition of the `project` function for the optional behaviours.
 
