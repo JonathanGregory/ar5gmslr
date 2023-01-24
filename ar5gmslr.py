@@ -80,20 +80,22 @@ def report(quantity,field=None,output=None,prefix=None,realise=False,
 # nr -- int, optional, indicates that each realisation on input should be
 #   replicated nr times on output to file
 
-#  if field.axis(-1,key=True)!='domtime':
+#  if field.axis(-1,key=True)!='axistime':
 #    raise ProjectionError('time should be the last dimension')
 
-  if output and not field:
+  if not field:
     print(quantity)
-    listfile=open(output+'/list','a')
-    listfile.write(quantity+'\n')
-    listfile.close()
+    if output:
+      listfile=open(output+'/list','a')
+      listfile.write(quantity+'\n')
+      listfile.close()
     return
 
 # Reshape as two-dimensional with time as the second dimension
   nyr=field.axis('T').size
   timeaxis=field.axis('T',key=True)
-  axes=[key for key in field.domain_axes.keys() if key!=timeaxis]
+  axes=list(field.constructs.filter_by_type('domain_axis',todict='True'))
+  axes=[axis for axis in axes if axis!=timeaxis]
   axes.append(timeaxis)
   field.transpose(axes,inplace=True)
   data=field.array.reshape(field.size//nyr,nyr)
@@ -379,17 +381,17 @@ def project_scenario(input,scenario,output=None,\
 # Create a cf.Field with the shape of the quantities to be calculated
 # [component_realization,climate_realization,time]
   template=cf.Field()
-  template.set_construct(cf.DomainAxis(nm),'domcomp')
-  template.set_construct(cf.DomainAxis(nt),'domclim')
-  template.set_construct(cf.DomainAxis(nyr),'domtime')
+  template.set_construct(cf.DomainAxis(nm),'axiscomp')
+  template.set_construct(cf.DomainAxis(nt),'axisclim')
+  template.set_construct(cf.DomainAxis(nyr),'axistime')
   template.set_data(cf.Data(numpy.full([nm,nt,nyr],numpy.nan)),
-    axes=['domcomp','domclim','domtime'])
+    axes=['axiscomp','axisclim','axistime'])
   template.units='1'
   template.set_construct(txin[-1].dim('T'))
-  template.set_construct(climdim)
+  template.set_construct(climdim,'dimclim')
   compdim=cf.DimensionCoordinate(data=cf.Data(numpy.arange(nm)),\
     properties=dict(standard_name='component_realization'))
-  template.set_construct(compdim)
+  template.set_construct(compdim,'dimcomp')
 
 # Obtain ensembles of projected components as cf.Field objects and add them up
   temperature=zt
@@ -413,6 +415,7 @@ def project_scenario(input,scenario,output=None,\
   if output:
     output=output+"/"+scenario+"_"
     prefix="%-10s "%scenario
+  else: prefix=''
   report("temperature",temperature,output,prefix,realise,nr=nm)
   report("expansion",expansion,output,prefix,realise,nr=nm)
   report("glacier",glacier,output,prefix,realise)
@@ -443,7 +446,7 @@ def project_glacier(it,zit,template,glaciermip):
   glmass=412.0-96.3 # initial glacier mass, used to set a limit, from Tab 4.2
   glmass=1e-3*glmass # m SLE
 
-  nr=template.axis('domcomp').size
+  nr=template.axis('axiscomp').size
   if glaciermip:
     if glaciermip==1:
       glparm=[dict(name='SLA2012',factor=3.39,exponent=0.722,cvgl=0.15),\
@@ -474,8 +477,8 @@ def project_glacier(it,zit,template,glaciermip):
       'must be a multiple of number of glacier methods')
   nrpergl=int(nr/ngl) # number of realisations per glacier method
   r=cf.Field()
-  r.set_construct(template.axis('domcomp'))
-  r.set_construct(template.dim('domcomp'))
+  r.set_construct(template.axis('axiscomp'))
+  r.set_construct(template.dim('dimcomp'))
   r.set_data(cf.Data(numpy.random.standard_normal(nr)))
   r.set_property('units','1')
 
@@ -510,14 +513,14 @@ def project_greensmb(zt,template):
   fnlogsd=0.4 # random methodological error of the log factor
   febound=[1,1.15] # bounds of uniform pdf of SMB elevation feedback factor
 
-  nr=template.axis('domcomp').size
+  nr=template.axis('axiscomp').size
 # random log-normal factor
   fn=numpy.exp(numpy.random.standard_normal(nr)*fnlogsd)
 # elevation feedback factor
   fe=numpy.random.sample(nr)*(febound[1]-febound[0])+febound[0]
   ff=cf.Field()
-  ff.set_construct(template.axis('domcomp'))
-  ff.set_construct(template.dim('domcomp'))
+  ff.set_construct(template.axis('axiscomp'))
+  ff.set_construct(template.dim('dimcomp'))
   ff.set_data(cf.Data(fn*fe))
   
   ztgreen=zt-dtgreen
@@ -541,8 +544,8 @@ def project_antsmb(zit,template,fraction=None):
 # template -- cf.Field with the required shape of the output
 # fraction -- array-like, random numbers for the SMB-dynamic feedback
 
-  nr=template.axis('domcomp').size
-  nt=template.axis('domclim').size
+  nr=template.axis('axiscomp').size
+  nt=template.axis('axisclim').size
 # antsmb=template.copy()
 # nr,nt,nyr=antsmb.shape
 
@@ -570,10 +573,10 @@ def project_antsmb(zit,template,fraction=None):
 # antsmb.data[:]=moaoKg*ainterfactor*zit.array.reshape(1,nt,-1)[:]
 
   z=cf.Field()
-  z.set_construct(template.axis('domcomp'),'domcomp')
-  z.set_construct(template.dim('domcomp'))
-  z.set_construct(template.axis('domclim'),'domclim')
-  z.set_construct(template.dim('domclim'))
+  z.set_construct(template.axis('axiscomp'),'axiscomp')
+  z.set_construct(template.dim('dimcomp'))
+  z.set_construct(template.axis('axisclim'),'axisclim')
+  z.set_construct(template.dim('dimclim'))
   z.set_data(cf.Data(moaoKg*ainterfactor))
   antsmb=z*zit
 
@@ -657,8 +660,8 @@ def time_projection(startratemean,startratepm,final,template,\
   time.set_data(timedata)
 
 # more general than nr,nt,nyr=template.shape
-  nr=template.axis('domcomp').size
-  nt=template.axis('domclim').size
+  nr=template.axis('axiscomp').size
+  nt=template.axis('axisclim').size
   nyr=template.axis('T').size
   if fraction is None:
     fraction=numpy.random.rand(nr,nt)
@@ -667,10 +670,10 @@ def time_projection(startratemean,startratepm,final,template,\
   data=cf.Data(fraction.reshape(nr,nt))
 
   fraction=cf.Field()
-  fraction.set_construct(template.axis('domcomp'),'domcomp')
-  fraction.set_construct(template.dim('domcomp'))
-  fraction.set_construct(template.axis('domclim'),'domclim')
-  fraction.set_construct(template.dim('domclim'))
+  fraction.set_construct(template.axis('axiscomp'),'axiscomp')
+  fraction.set_construct(template.dim('dimcomp'))
+  fraction.set_construct(template.axis('axisclim'),'axisclim')
+  fraction.set_construct(template.dim('dimclim'))
   fraction.set_data(data)
 
 # Convert inputs to startrate (m yr-1) and afinal (m), where both are 2-element

@@ -1,7 +1,7 @@
 # ar5gmslr
 
 This repository provides a [Python
-3](https://docs.python.org/3) module called [`ar5gmslr.py`](ar5gmslr.py), 
+3](https://docs.python.org/3) module called [`ar5gmslr.py`](./ar5gmslr.py.txt), 
 containing a program to compute projections of annual-mean
 global-mean sea-level rise (GMSLR) for the ends of the calendar years 2006&ndash;2009 
 (or equivalently at the start of the years 2007&ndash;2100)
@@ -9,6 +9,16 @@ with respect to the
 time-mean of 1996&ndash;2005, given annual global-mean projections of surface
 air temperature change (CMIP[56] variable `tas`) and thermosteric sea-level
 rise (CMIP[56] variable `zostoga`).
+
+By default the program uses the methods of Fifth Assessment
+Report of the Intergovernmental Panel on Climate Change (AR5) Working Group I
+(detailed in the [supplementary online
+material](https://www.ipcc.ch/site/assets/uploads/2018/07/WGI_AR5.Chap_.13_SM.1.16.14.pdf)
+of [chapter 13, Church et al.,
+2013](http://dx.doi.org/10.1017/CBO9781107415324.026)).  Given AR5 input, the
+program reproduces the AR5 mean and likely ranges to within 0.01 metres in all
+components and the total, which is the precision stated by the AR5 for these
+statistics.
 
 The input should be supplied in netCDF files following the [CF
 convention](http://cfconventions.org)
@@ -28,16 +38,6 @@ distribution, as in AR5, or
 * each member of an ensemble. In this case, the sources of the ensemble members
 are assumed to correspond for the two quantities, and the members are sampled
 randomly with equal probability.
-
-By default the program uses the methods of Fifth Assessment
-Report of the Intergovernmental Panel on Climate Change (AR5) Working Group I
-(detailed in the [supplementary online
-material](https://www.ipcc.ch/site/assets/uploads/2018/07/WGI_AR5.Chap_.13_SM.1.16.14.pdf)
-of [chapter 13, Church et al.,
-2013](http://dx.doi.org/10.1017/CBO9781107415324.026)).  Given AR5 input, the
-program reproduces the AR5 mean and likely ranges to within 0.01 metres in all
-components and the total, which is the precision stated by the AR5 for these
-statistics.
 
 The program also contains optional alternative methods for projecting the
 contribution to GMSLR arising from changes in
@@ -64,14 +64,14 @@ of each contribution and the total. (The AR5 interprets the 5-95% range of
 GMSLR model projections as the assessed "likely range".)
 
 * annual timeseries of the Monte Carlo ensemble members (by default 450,000)
-of each contribution and the total.
+of each contribution and the total, arranged in the same order for each.
 
 This repository also provides directories containing input timeseries in the
 form expected by the program.
 
-* [`ar5_input`](ar5_input) for projections based on CMIP5 AOGCMs, as used in the AR5.
+* [`ar5_input`](https://github.com/JonathanGregory/ar5gmslr/tree/main/ar5_input) for projections based on CMIP5 AOGCMs, as used in the AR5.
 
-* [`cmip6_input`](cmip6_input) for projections based on CMIP6 AOGCMs, as used by
+* [`cmip6_input`](https://github.com/JonathanGregory/ar5gmslr/tree/main/cmip6_input) for projections based on CMIP6 AOGCMs, as used by
 [Hermans et al.  (2021)](10.1029/2020GL092064).
 
 The program uses the freely available [`cf-python`
@@ -84,6 +84,11 @@ import ar5gmslr # includes 'import cf' for the cf-python package
 ar5gmslr.project('ar5_input') # directory in this repository
 ```
 
-The [`stdout` from this process](ar5gmslr_ar5_list.txt) is consistent (within 0.01 m)
+This process takes about 2.5 minutes on a 3.4 GHz processor with 8 Gbyte RAM.
+The [`stdout`](https://github.com/JonathanGregory/ar5gmslr/blob/main/ar5gmsl_ar5_list.txt) is consistent (within 0.01 m)
 with Table 13.SM.1 of [AR5 chapter 13](https://www.ipcc.ch/site/assets/uploads/2018/07/WGI_AR5.Chap_.13_SM.1.16.14.pdf).
 See the definition of the `project` function for the optional behaviours.
+
+The program was originally written by [Jonathan
+Gregory](https://www.met.rdg.ac.uk/~jonathan) in IDL for the works cited above, and
+later converted by him to Python.
