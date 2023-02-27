@@ -66,8 +66,10 @@ GMSLR model projections as the assessed "likely range".)
 * annual timeseries of the Monte Carlo ensemble members (by default 450,000)
 of each contribution and the total, arranged in the same order for each.
 
+See the definition of the `project` function for other optional behaviours.
+
 This repository also provides directories containing input timeseries in the
-form expected by the program.
+form expected by the program:
 
 * [`ar5_input`](https://github.com/JonathanGregory/ar5gmslr/tree/main/ar5_input) for projections based on CMIP5 AOGCMs, as used in the AR5.
 
@@ -87,8 +89,7 @@ ar5gmslr.project('ar5_input',output='ar5gmslr_ar5') # output is optional
 This process takes about 2.5 minutes on a 3.4 GHz processor with 8 Gbyte RAM.
 The [`stdout`](https://github.com/JonathanGregory/ar5gmslr/blob/main/ar5gmslr_ar5.stdout.txt) is consistent (within 0.01 m)
 with Table 13.SM.1 of [AR5 chapter 13](https://www.ipcc.ch/site/assets/uploads/2018/07/WGI_AR5.Chap_.13_SM.1.16.14.pdf).
-The optional `output` directory (as in the example) contains a [`list` file](https://github.com/JonathanGregory/ar5gmslr/blob/main/list) with the same summary as `stdout`.
-See the definition of the `project` function for other optional behaviours.
+The [`output` directory](https://github.com/JonathanGregory/ar5gmslr/tree/main/ar5gmslr_ar5) contains a [`list` file](https://github.com/JonathanGregory/ar5gmslr/blob/main/ar5gmslr_ar5/list) with the same summary as `stdout`.
 
 Hermans et al. produced three sets of projections for CMIP6 input, thus:
 
