@@ -98,7 +98,7 @@ import ar5gmslr # includes 'import cf' for the cf-python package
 ar5gmslr.project('cmip6_input',output='ar5gmslr_cmip6') # AR5 methods
 ```
 
-The [`stdout`](https://github.com/JonathanGregory/ar5gmslr/blob/main/ar5gmslr_cmip6.stdout.txt) for the AR5 methods (the first case) is consistent with Table S5 in the supplementary online material of Hermans et al.
+The [`stdout`](https://github.com/JonathanGregory/ar5gmslr/blob/main/ar5gmslr_cmip6.stdout.txt) and [`output` directory](https://github.com/JonathanGregory/ar5gmslr/tree/main/ar5gmslr_cmip6) for the AR5 methods (the first case) is consistent with Table S5 in the supplementary online material of Hermans et al.
 
 The program was originally written by [Jonathan
 Gregory](https://www.met.rdg.ac.uk/~jonathan) in IDL for the works cited above, and
