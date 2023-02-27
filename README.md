@@ -72,7 +72,7 @@ form expected by the program.
 * [`ar5_input`](https://github.com/JonathanGregory/ar5gmslr/tree/main/ar5_input) for projections based on CMIP5 AOGCMs, as used in the AR5.
 
 * [`cmip6_input`](https://github.com/JonathanGregory/ar5gmslr/tree/main/cmip6_input) for projections based on CMIP6 AOGCMs, as used by
-[Hermans et al.  (2021)](10.1029/2020GL092064).
+[Hermans et al. (2021)](10.1029/2020GL092064).
 
 The program uses the freely available [`cf-python`
 package](https://ncas-cms.github.io/cf-python) for input and output of netCDF
@@ -81,13 +81,23 @@ program for AR5 input using all defaults:
 
 ```
 import ar5gmslr # includes 'import cf' for the cf-python package
-ar5gmslr.project('ar5_input') # directory in this repository
+ar5gmslr.project('ar5_input',output='ar5gmslr_ar5') # output is optional
 ```
 
 This process takes about 2.5 minutes on a 3.4 GHz processor with 8 Gbyte RAM.
-The [`stdout`](https://github.com/JonathanGregory/ar5gmslr/blob/main/ar5gmslr_ar5_list.txt) is consistent (within 0.01 m)
+The [`stdout`](https://github.com/JonathanGregory/ar5gmslr/blob/main/ar5gmslr_ar5.stdout.txt) is consistent (within 0.01 m)
 with Table 13.SM.1 of [AR5 chapter 13](https://www.ipcc.ch/site/assets/uploads/2018/07/WGI_AR5.Chap_.13_SM.1.16.14.pdf).
-See the definition of the `project` function for the optional behaviours.
+The optional `output` directory (as in the example) contains a [`list` file](https://github.com/JonathanGregory/ar5gmslr/blob/main/list) with the same summary as `stdout`.
+See the definition of the `project` function for other optional behaviours.
+
+Hermans et al. produced three sets of projections for CMIP6 input, thus:
+
+```
+import ar5gmslr # includes 'import cf' for the cf-python package
+ar5gmslr.project('cmip6_input',output='ar5gmslr_cmip6') # AR5 methods
+```
+
+The [`stdout`](https://github.com/JonathanGregory/ar5gmslr/blob/main/ar5gmslr_cmip6.stdout.txt) for the AR5 methods (the first case) is consistent with Table S5 in the supplementary online material of Hermans et al.
 
 The program was originally written by [Jonathan
 Gregory](https://www.met.rdg.ac.uk/~jonathan) in IDL for the works cited above, and

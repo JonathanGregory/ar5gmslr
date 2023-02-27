@@ -1,4 +1,4 @@
-rcp26
+rcp26:
     temperature  1.109 [ 0.352 to  1.958]
       expansion  0.151 [ 0.108 to  0.200]
         glacier  0.107 [ 0.047 to  0.168]
@@ -11,7 +11,7 @@ rcp26
        greennet  0.073 [ 0.039 to  0.120]
          antnet  0.064 [-0.035 to  0.161]
        sheetdyn  0.125 [ 0.030 to  0.220]
-rcp45
+rcp45:
     temperature  2.008 [ 1.143 to  2.980]
       expansion  0.203 [ 0.155 to  0.257]
         glacier  0.133 [ 0.070 to  0.199]
@@ -24,7 +24,7 @@ rcp45
        greennet  0.088 [ 0.049 to  0.152]
          antnet  0.055 [-0.046 to  0.154]
        sheetdyn  0.125 [ 0.030 to  0.220]
-rcp60
+rcp60:
     temperature  2.497 [ 1.586 to  3.520]
       expansion  0.218 [ 0.169 to  0.272]
         glacier  0.135 [ 0.072 to  0.201]
@@ -37,7 +37,7 @@ rcp60
        greennet  0.091 [ 0.051 to  0.157]
          antnet  0.054 [-0.047 to  0.154]
        sheetdyn  0.125 [ 0.030 to  0.220]
-rcp85
+rcp85:
     temperature  4.230 [ 2.913 to  5.708]
       expansion  0.316 [ 0.249 to  0.392]
         glacier  0.179 [ 0.103 to  0.259]
@@ -50,7 +50,7 @@ rcp85
        greennet  0.150 [ 0.084 to  0.271]
          antnet  0.039 [-0.070 to  0.143]
        sheetdyn  0.139 [ 0.041 to  0.237]
-sresa1b
+sresa1b:
     temperature  3.000 [ 2.018 to  4.103]
       expansion  0.241 [ 0.183 to  0.307]
         glacier  0.155 [ 0.088 to  0.226]
