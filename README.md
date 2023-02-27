@@ -71,9 +71,9 @@ See the definition of the `project` function for other optional behaviours.
 This repository also provides directories containing input timeseries in the
 form expected by the program:
 
-* [`ar5_input`](https://github.com/JonathanGregory/ar5gmslr/tree/main/ar5_input) for projections based on CMIP5 AOGCMs, as used in the AR5.
+* [`ar5_input`](https://github.com/JonathanGregory/ar5gmslr/tree/main/ar5_input) for projections based the CMIP5 AOGCM ensemble, as used in the AR5.
 
-* [`cmip6_input`](https://github.com/JonathanGregory/ar5gmslr/tree/main/cmip6_input) for projections based on CMIP6 AOGCMs, as used by
+* [`cmip6_input`](https://github.com/JonathanGregory/ar5gmslr/tree/main/cmip6_input) for projections based on the CMIP6 AOGCM ensemble, as used by
 [Hermans et al. (2021)](10.1029/2020GL092064).
 
 The program uses the freely available [`cf-python`
@@ -91,15 +91,18 @@ The [`stdout`](https://github.com/JonathanGregory/ar5gmslr/blob/main/ar5gmslr_ar
 with Table 13.SM.1 of [AR5 chapter 13](https://www.ipcc.ch/site/assets/uploads/2018/07/WGI_AR5.Chap_.13_SM.1.16.14.pdf).
 The [`output` directory](https://github.com/JonathanGregory/ar5gmslr/tree/main/ar5gmslr_ar5) contains a [`list` file](https://github.com/JonathanGregory/ar5gmslr/blob/main/ar5gmslr_ar5/list) with the same summary as `stdout`.
 
-Hermans et al. produced three sets of projections for CMIP6 input, thus:
+Hermans et al. produced two sets of projections from CMIP6 ensemble input, thus:
 
 ```
 import ar5gmslr # includes 'import cf' for the cf-python package
-ar5gmslr.project('cmip6_input',output='ar5gmslr_cmip6') # AR5 methods
+# AR5 methods
+ar5gmslr.project('cmip6_input',output='ar5gmslr_cmip6')
+# AR5 methods except with Antarctic dynamical ice discharge based on Levermann et al. (2014)
+ar5gmslr.project('cmip6_input',levermann=dict(ssp126='rcp26',ssp245='rcp45',ssp585='rcp85'))
 ```
 
-The [`stdout`](https://github.com/JonathanGregory/ar5gmslr/blob/main/ar5gmslr_cmip6.stdout.txt) and [`output` directory](https://github.com/JonathanGregory/ar5gmslr/tree/main/ar5gmslr_cmip6) for the AR5 methods (the first case) is consistent with Table S5 in the supplementary online material of Hermans et al.
+The [`stdout`](https://github.com/JonathanGregory/ar5gmslr/blob/main/ar5gmslr_cmip6.stdout.txt) and [`output` directory](https://github.com/JonathanGregory/ar5gmslr/tree/main/ar5gmslr_cmip6) for the AR5 methods (the first case) are consistent with Table S5 in the supplementary online material of Hermans et al.
 
-The program was originally written by [Jonathan
-Gregory](https://www.met.rdg.ac.uk/~jonathan) in IDL for the works cited above, and
-later converted by him to Python.
+The program was written by [Jonathan
+Gregory](https://www.met.rdg.ac.uk/~jonathan) for the works cited above, some
+parts being originally in IDL and later translated to Python.
