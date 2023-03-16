@@ -98,11 +98,11 @@ import ar5gmslr # includes 'import cf' for the cf-python package
 # AR5 methods
 ar5gmslr.project('cmip6_input',output='ar5gmslr_cmip6')
 # AR5 methods except with Antarctic dynamical ice discharge based on Levermann et al. (2014)
-ar5gmslr.project('cmip6_input',levermann=dict(ssp126='rcp26',ssp245='rcp45',ssp585='rcp85'))
+ar5gmslr.project('cmip6_input',levermann=dict(ssp126='rcp26',ssp245='rcp45',ssp585='rcp85'),output='ar5gmslr_cmip6_levermann')
 ```
 
-The [`stdout`](https://github.com/JonathanGregory/ar5gmslr/blob/main/ar5gmslr_cmip6.stdout.txt) and [`output` directory](https://github.com/JonathanGregory/ar5gmslr/tree/main/ar5gmslr_cmip6) for the AR5 methods (the first case) are consistent with Table S5 in the supplementary online material of Hermans et al.
+This repository contains the results for both cases ([`stdout`](https://github.com/JonathanGregory/ar5gmslr/blob/main/ar5gmslr_cmip6.stdout.txt) and [`output` directory](https://github.com/JonathanGregory/ar5gmslr/tree/main/ar5gmslr_cmip6) for the AR5 methods, [`stdout`](https://github.com/JonathanGregory/ar5gmslr/blob/main/ar5gmslr_cmip6_levermann.stdout.txt) and [`output` directory](https://github.com/JonathanGregory/ar5gmslr/tree/main/ar5gmslr_cmip6_levermann) for AR5 with Levermann).
+For the first case, the components and totals of GMSLR are are consistent with Table S5 in the supplementary online material of Hermans et al., and the totals of GMSLR are shown also in the first row of Table S4.
+The results provided in this repository for the case with Levermann are consistent with the totals shown in the second row of Table S4, but the paper does not include the results for components in that case.
 
-The program was written by [Jonathan
-Gregory](https://www.met.rdg.ac.uk/~jonathan) for the works cited above, some
-parts being originally in IDL and later translated to Python.
+The program was written by [Jonathan Gregory](https://www.met.rdg.ac.uk/~jonathan) for the works cited above, some parts being originally in IDL and later translated to Python.
