@@ -72,7 +72,7 @@ form expected by the program:
 
 * [`ar5_input`](https://github.com/JonathanGregory/ar5gmslr/tree/main/ar5_input) for projections based the CMIP5 AOGCM ensemble, as used in the AR5.
 
-* `palmer20TLM_input` for extended CMIP5-based projections to 2300, as used by [Palmer et al. (2020)](http://dx.doi.org/10.1029/2019EF001413).
+* [`palmer20TLM_input`](https://github.com/JonathanGregory/ar5gmslr/tree/main/palmer20TLM_input) for extended CMIP5-based projections to 2300, as used by [Palmer et al. (2020)](http://dx.doi.org/10.1029/2019EF001413).
 
 * [`cmip6_input`](https://github.com/JonathanGregory/ar5gmslr/tree/main/cmip6_input) for projections based on the CMIP6 AOGCM ensemble, as used by [Hermans et al. (2021)](10.1029/2020GL092064).
 
@@ -118,6 +118,6 @@ Palmer et al. (2020) made projections to 2300 using `tas` and `zostoga` estimate
 import ar5gmslr # includes 'import cf' for the cf-python package
 ar5gmslr.project('palmer20TLM_input',palmer=True,levermann=True,output='ar5gmslr_palmer20TLM')
 ```
-This repository contains the `stdout` and `output` directory. The output directory occupies 18 Gbyte in this case, including the files containing Monte Carlo ensemble members.
+This repository contains the [`stdout`](https://github.com/JonathanGregory/ar5gmslr/blob/main/ar5gmslr_palmer20TLM.stdout.txt) and [`output` directory](https://github.com/JonathanGregory/ar5gmslr/tree/main/ar5gmslr_palmer20TLM). The output directory occupies 18 Gbyte in this case, including the files containing Monte Carlo ensemble members.
 
 The program was written by [Jonathan Gregory](https://www.met.rdg.ac.uk/~jonathan) for the works cited above, some parts being originally in IDL and later translated to Python.
