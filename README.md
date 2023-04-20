@@ -56,8 +56,7 @@ GlacierMIP2 [(Marzeion et al.,
 more and later versions of global glacier models than were available at
 the time of the AR5.
 
-By default the program tabulates the results for 2100 on `stdout`. Optionally
-it can generate CF-netCDF output files containing
+The program tabulates the results for 2100 on `stdout`, and generates CF-netCDF output files containing
 
 * annual timeseries of the median, 5- and 95-percentiles of the distributions
 of each contribution and the total. (The AR5 interprets the 5-95% range of
@@ -66,20 +65,25 @@ GMSLR model projections as the assessed "likely range".)
 * annual timeseries of the Monte Carlo ensemble members (by default 450,000)
 of each contribution and the total, arranged in the same order for each.
 
-See the definition of the `project` function for other optional behaviours.
+See the definition of the `project` function for optional behaviours.
 
 This repository also provides directories containing input timeseries in the
 form expected by the program:
 
 * [`ar5_input`](https://github.com/JonathanGregory/ar5gmslr/tree/main/ar5_input) for projections based the CMIP5 AOGCM ensemble, as used in the AR5.
 
-* [`cmip6_input`](https://github.com/JonathanGregory/ar5gmslr/tree/main/cmip6_input) for projections based on the CMIP6 AOGCM ensemble, as used by
-[Hermans et al. (2021)](10.1029/2020GL092064).
+* `palmer20TLM_input` for extended CMIP5-based projections to 2300, as used by [Palmer et al. (2020)](http://dx.doi.org/10.1029/2019EF001413).
+
+* [`cmip6_input`](https://github.com/JonathanGregory/ar5gmslr/tree/main/cmip6_input) for projections based on the CMIP6 AOGCM ensemble, as used by [Hermans et al. (2021)](10.1029/2020GL092064).
 
 The program uses the freely available [`cf-python`
 package](https://ncas-cms.github.io/cf-python) for input and output of netCDF
-files and for convenience in manipulating the data in memory. To run the
-program for AR5 input using all defaults:
+files and for convenience in manipulating the data in memory.
+It requires cf-python version 3.14.0 (2023-01-31) or later, which uses `dask`.
+There is currently a harmless bug which repeatedly produces an annoying message: `UserWarning: Warning: 'partition' will ignore the 'mask' of the MaskedArray. arr.partition(`.
+Please ignore this.
+
+To run the program for AR5 input using all defaults:
 
 ```
 import ar5gmslr # includes 'import cf' for the cf-python package
@@ -90,8 +94,11 @@ This process takes about 2.5 minutes on a 3.4 GHz processor with 8 Gbyte RAM.
 The [`stdout`](https://github.com/JonathanGregory/ar5gmslr/blob/main/ar5gmslr_ar5.stdout.txt) is consistent (within 0.01 m)
 with Table 13.SM.1 of [AR5 chapter 13](https://www.ipcc.ch/site/assets/uploads/2018/07/WGI_AR5.Chap_.13_SM.1.16.14.pdf).
 The [`output` directory](https://github.com/JonathanGregory/ar5gmslr/tree/main/ar5gmslr_ar5) contains a [`list` file](https://github.com/JonathanGregory/ar5gmslr/blob/main/ar5gmslr_ar5/list) with the same summary as `stdout`.
+The output directory requires 9.7 Gbyte, mostly because of the CF-netCDF files on Monte Carlo ensemble members.
+These files have not been included in this repository.
 
-Hermans et al. produced two sets of projections from CMIP6 ensemble input, thus:
+Hermans et al. (2021) produced two sets of projections from CMIP6 ensemble
+input, thus:
 
 ```
 import ar5gmslr # includes 'import cf' for the cf-python package
@@ -104,5 +111,13 @@ ar5gmslr.project('cmip6_input',levermann=dict(ssp126='rcp26',ssp245='rcp45',ssp5
 This repository contains the results for both cases ([`stdout`](https://github.com/JonathanGregory/ar5gmslr/blob/main/ar5gmslr_cmip6.stdout.txt) and [`output` directory](https://github.com/JonathanGregory/ar5gmslr/tree/main/ar5gmslr_cmip6) for the AR5 methods, [`stdout`](https://github.com/JonathanGregory/ar5gmslr/blob/main/ar5gmslr_cmip6_levermann.stdout.txt) and [`output` directory](https://github.com/JonathanGregory/ar5gmslr/tree/main/ar5gmslr_cmip6_levermann) for AR5 with Levermann).
 For the first case, the components and totals of GMSLR are are consistent with Table S5 in the supplementary online material of Hermans et al., and the totals of GMSLR are shown also in the first row of Table S4.
 The results provided in this repository for the case with Levermann are consistent with the totals shown in the second row of Table S4, but the paper does not include the results for components in that case.
+
+Palmer et al. (2020) made projections to 2300 using `tas` and `zostoga` estimated for RCP scenarios beyond 2100 with the two-layer model by [Palmer et al. (2018)](http://dx.doi.org/10.1088/1748-9326/aad2e4) following [Geoffroy et al. (2013)](http://dx.doi.org/10.1175/JCLI-D-12-00195.1). In this application, the rates of GMSLR due to Greenland ice sheet surface mass balance `greensmb`, Greenland ice sheet dynamics `greendyn` and Antarctic ice-sheet dynamics `antdyn` are kept constant after 2100 (`palmer=True`). The projections were made thus:
+
+```
+import ar5gmslr # includes 'import cf' for the cf-python package
+ar5gmslr.project('palmer20TLM_input',palmer=True,levermann=True,output='ar5gmslr_palmer20TLM')
+```
+This repository contains the `stdout` and `output` directory. The output directory occupies 18 Gbyte in this case, including the files containing Monte Carlo ensemble members.
 
 The program was written by [Jonathan Gregory](https://www.met.rdg.ac.uk/~jonathan) for the works cited above, some parts being originally in IDL and later translated to Python.

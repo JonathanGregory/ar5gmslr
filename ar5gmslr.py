@@ -16,16 +16,29 @@ import os,os.path,fnmatch
 import numpy
 from collections.abc import Sequence
 from scipy.stats import norm
+import gc
+
+# First year of AR5 projections
+endofhistory=2006
+
+# Last year of AR5 projections
+endofAR5=2100
+
+# Fraction of SLE from Greenland during 1996 to 2005 assumed to result from
+# rapid dynamical change, with the remainder assumed to result from SMB change
+fgreendyn=0.5
+
+# m SLE from Greenland during 1996 to 2005 according to AR5 chapter 4
+dgreen=(3.21-0.30)*1e-3
+
+# m SLE from Antarctica during 1996 to 2005 according to AR5 chapter 4
+dant=(2.37+0.13)*1e-3
+
+# Conversion factor for Gt to m SLE
+mSLEoGt=1e12/3.61e14*1e-3
 
 class ProjectionError(Exception):
   pass
-
-def mSLEoGt():
-# Conversion factor for Gt to m SLE
-  return 1e12/3.61e14*1e-3
-  
-def endofhistory():
-  return 2006
 
 def vlikely_range(data):
 # Compute median and 5-95% range for the first (or only) axis of data.
@@ -43,20 +56,7 @@ def actual_range(data):
   return numpy.array([numpy.mean(data,0),numpy.amin(data,0),\
     numpy.amax(data,0)])
 
-def dant():
-# m SLE from Antarctica during 1996 to 2005 according to AR5 chapter 4
-  return (2.37+0.13)*1e-3
-
-def dgreen():
-# m SLE from Greenland during 1996 to 2005 according to AR5 chapter 4
-  return (3.21-0.30)*1e-3
-
-def fgreendyn():
-# Fraction of SLE from Greenland during 1996 to 2005 assumed to result from
-# rapid dynamical change, with the remainder assumed to result from SMB change
-  return 0.5
-
-def report(quantity,field=None,output=None,prefix=None,realise=False,
+def report(quantity,field=None,output=None,prefix=None,ensemble=False,
   uniform=False,nr=None):
 # Report the likely range of a projected quantity in the last timestep and
 # optionally save the timeseries of likely range and median, and the
@@ -71,8 +71,9 @@ def report(quantity,field=None,output=None,prefix=None,realise=False,
 #   is not supplied; if output is not specified, no files are written
 # prefix -- str, optional, a string which is written at the start of every
 #   line in the list file which is calculated from a field
-# realise -- bool, optional, write output files of the ensemble as well as
-#   the statistics
+# ensemble -- bool, optional, write output files of the ensemble as well as
+#   the statistics. ensemble=True is assumed regardless of the parameter
+#   (this is a temporary arrangement).
 # uniform -- bool, optional, indicates that the quantity has a uniform
 #   distribution, for which the likely range is given by the extrema; by
 #   default False, in which case the likely range is 5-95% (following the
@@ -84,6 +85,7 @@ def report(quantity,field=None,output=None,prefix=None,realise=False,
 #  if field.axis(-1,key=True)!='axistime':
 #    raise ProjectionError('time should be the last dimension')
 
+##  print(cf.free_memory()/1e9)
   if not field:
     print(quantity)
     if output:
@@ -92,22 +94,15 @@ def report(quantity,field=None,output=None,prefix=None,realise=False,
       listfile.close()
     return
 
-# Reshape as two-dimensional with time as the second dimension
-  nyr=field.axis('T').size
-  timeaxis=field.axis('T',key=True)
-  axes=list(field.constructs.filter_by_type('domain_axis',todict='True'))
-  axes=[axis for axis in axes if axis!=timeaxis]
-  axes.append(timeaxis)
-  field.transpose(axes,inplace=True)
-  data=field.array.reshape(field.size//nyr,nyr)
+# Get values at the end of the timeseries
+##  data=field[...,-1].flatten().array
+  data=field.subspace(T=[-1]).flatten().array
 
 # Print likely range
   vformat="%15s %6.3f [%6.3f to %6.3f]"
-  if uniform:
-    datarange=actual_range(data)
-  else:
-    datarange=vlikely_range(data)
-  listline=vformat%tuple([quantity]+list(datarange[:,-1]))
+  if uniform: datarange=actual_range(data)
+  else: datarange=vlikely_range(data)
+  listline=vformat%tuple([quantity]+list(datarange))
   print(listline)
 
 # Optionally write output files
@@ -117,6 +112,20 @@ def report(quantity,field=None,output=None,prefix=None,realise=False,
     listfile=open(listfile,'a')
     listfile.write(listline+'\n')
     listfile.close()
+
+# Reshape data as two-dimensional with time as the second dimension
+    nyr=field.axis('T').size
+    timeaxis=field.axis('T',key=True)
+    axes=list(field.constructs.filter_by_type('domain_axis',todict='True'))
+    axes=[axis for axis in axes if axis!=timeaxis]
+    axes.append(timeaxis)
+    field.transpose(axes,inplace=True)
+    data=field.array.reshape(field.size//nyr,nyr)
+# 2D datarange with time as the second dimension
+    if uniform: datarange=actual_range(data)
+    else: datarange=vlikely_range(data)
+    del(data)
+
     statfield=cf.Field()
     if quantity=="GMSLR":
       statfield.standard_name="global_average_sea_level_change"
@@ -150,30 +159,32 @@ def report(quantity,field=None,output=None,prefix=None,realise=False,
       statfield.data[:]=datarange[stats[stat],:]
       cf.write(statfield,output+quantity+"_"+stat+".nc")
 
+    realise=True # realise=ensemble once cf-python can cache
     if realise:
-      nt=field.axis('climate_realization').size
-      data=numpy.asfarray(field.array.reshape(-1,nyr),dtype='float32')
-      if nr:
-#       nt=data.shape[0]
-        data=numpy.broadcast_to(data,(nr,nt,nyr)).copy()
-        data.shape=(nr*nt,nyr)
+      if field.domain_axes('realization'): ofield=field
       else:
-        nr=data.shape[0]//nt
-      ofield=cf.Field()
-      ofield.set_data(cf.Data(data))
-      ofield.set_construct(field.axis('T'))
-      ofield.set_construct(field.dim('T'))
-      ofield.set_construct(cf.DomainAxis(ofield.shape[0]))
-      realdim=cf.DimensionCoordinate(data=\
-        cf.Data(numpy.arange(ofield.shape[0],dtype='int32')),\
-        properties=dict(standard_name='realization'))
-      ofield.set_construct(realdim)
-      climaux=cf.AuxiliaryCoordinate(data=\
-        cf.Data(numpy.broadcast_to(numpy.arange(nt,dtype='int32'),\
-        (nr,nt)).reshape(nr*nt)),\
-        properties=dict(long_name='climate_realization'))
-      climaux.nc_set_variable('climate')
-      ofield.set_construct(climaux)
+        nt=field.axis('climate_realization').size
+        data=numpy.asfarray(field.array.reshape(-1,nyr),dtype='float32')
+        if nr:
+          data=numpy.broadcast_to(data,(nr,nt,nyr)).copy()
+          data.shape=(nr*nt,nyr)
+        else:
+          nr=data.shape[0]//nt
+        ofield=cf.Field()
+        ofield.set_data(cf.Data(data))
+        ofield.set_construct(field.axis('T'))
+        ofield.set_construct(field.dim('T'))
+        ofield.set_construct(cf.DomainAxis(ofield.shape[0]))
+        realdim=cf.DimensionCoordinate(data=\
+          cf.Data(numpy.arange(ofield.shape[0],dtype='int32')),\
+          properties=dict(standard_name='realization'))
+        ofield.set_construct(realdim)
+        climaux=cf.AuxiliaryCoordinate(data=\
+          cf.Data(numpy.broadcast_to(numpy.arange(nt,dtype='int32'),\
+          (nr,nt)).reshape(nr*nt)),\
+          properties=dict(long_name='climate_realization'))
+        climaux.nc_set_variable('climate')
+        ofield.set_construct(climaux)
       if quantity in ["GMSLR","expansion","temperature"]:
         ofield.standard_name=statfield.standard_name
       else:
@@ -182,6 +193,11 @@ def report(quantity,field=None,output=None,prefix=None,realise=False,
       ofield.ncvar=quantity
       ofield.nc_set_variable(quantity)
       cf.write(ofield,output+quantity+".nc")
+      del(ofield)
+      gc.collect()
+      field=cf.read(output+quantity+".nc")[0]
+
+  return(field)
 
 def project(input=None,scenarios=None,output=None,levermann=None,**kwargs):
 # input -- str, path to directory containing input files. The directory should
@@ -192,18 +208,16 @@ def project(input=None,scenarios=None,output=None,levermann=None,**kwargs):
 #   have a model dimension and are used if nt==0.
 # scenarios -- str or sequence of str, scenarios for which projections are to be
 #   made, by default all those represented in the input directory
-# output, str, optional -- path to directory in which output files are to be
-#   written. It is created if it does not exist. No files are written if this
-#   argument is omitted.
-# realise -- bool, optional, write output files of the ensemble as well as
-#   the statistics
+# output, str -- path to directory in which output files are to be written. It
+#   is created if it does not exist.
 # seed -- optional, for numpy.random, default zero
 # nt -- int, optional, number of realisations of the input timeseries for each
 #   scenario, default 450, to be generated using the mean and sd files; specify
 #   0 if the ensemble of individual models is to be used instead, which is read
 #   from the models files.
 # nm -- int, optional, number of realisations of components and of the sum for
-#   each realisation of the input timeseries, default 1000
+#   each realisation of the input timeseries, default 1000, must be a multiple
+#   of the number of glacier methods.
 # tcv -- float, optional, default 1.0, multiplier for the standard deviation
 #   in the input fields
 # glaciermip -- optional, default False => AR5 parameters, 1 => GlacierMIP
@@ -214,13 +228,19 @@ def project(input=None,scenarios=None,output=None,levermann=None,**kwargs):
 #   Levermann RCP fit to be used; if str, identifies the single fit to be used
 #   for every scenario; otherwise it is treated as True or False; if True the
 #   scenarios must all be ones that Levermann provides.
+# palmer -- bool, optional, default False, allow integration to end in any year
+#   up to 2300, with the contributions to GMLSR from ice-sheet dynamics, Green-
+#   land SMB and land water storage held at the 2100 rate beyond 2100.
 
 # Check input directory
   if input is None:
-    raise ProjectionError('input must be specified')
+    raise ProjectionError('input directory must be specified')
   input=os.path.expandvars(os.path.expanduser(input))
   if not os.path.isdir(input):
     raise ProjectionError('input must be an existing directory')
+
+  if output is None:
+    raise ProjectionError('output directory must be specified')
 
   if scenarios is None:
 # Obtain list of scenarios from the input filenames
@@ -257,10 +277,11 @@ def project(input=None,scenarios=None,output=None,levermann=None,**kwargs):
     report(scenario+':',output=output)
     project_scenario(input,scenario,output,\
       levermann=levermann[scenario],**kwargs)
+    gc.collect()
 
 def project_scenario(input,scenario,output=None,\
   seed=0,nt=450,nm=1000,tcv=1.0,\
-  glaciermip=False,realise=False,levermann=False):
+  glaciermip=False,ensemble=False,levermann=False,palmer=False):
 # Make GMSLR projection for the specified single scenario
 # Arguments are all the same as project() except for:
 # scenario -- str, name of the scenario
@@ -273,7 +294,9 @@ def project_scenario(input,scenario,output=None,\
 
   numpy.random.seed(seed)
 
-  startyr=endofhistory() # year when the timeseries for integration begin
+  startyr=endofhistory # year when the timeseries for integration begin
+  if palmer: maxyr=2300
+  else: maxyr=endofAR5
     
 # Read the input fields for temperature and expansion into txin. txin has four
 # elements if nt>0: temperature mean, temperature sd, expansion mean, expansion
@@ -332,7 +355,7 @@ def project_scenario(input,scenario,output=None,\
     raise ProjectionError('temperature values must be for calendar years')
   if (tupper.year[0]-1)!=startyr:
     raise ProjectionError('temperature must begin at '+str(startyr))
-  if tupper.year[-1]>2100:
+  if tupper.year[-1]>maxyr:
     raise ProjectionError('temperature input must not go beyond 2100')
   time=txin[-1].dim('T') # expansion input supplies the output time coords
   nyr=time.size
@@ -395,40 +418,62 @@ def project_scenario(input,scenario,output=None,\
   template.set_construct(compdim,'dimcomp')
 
 # Obtain ensembles of projected components as cf.Field objects and add them up
-  temperature=zt
-  expansion=zx
-  glacier=project_glacier(zitmean,zit,template,glaciermip)
-  greensmb=project_greensmb(zt,template)
-  greendyn=project_greendyn(scenario,template)
-  greennet=greensmb+greendyn
-  fraction=numpy.random.rand(nm*nt) # correlation between antsmb and antdyn
-  antsmb=project_antsmb(zit,template,fraction)
-  if levermann and not isinstance(levermann,str): levermann=scenario
-  antdyn=project_antdyn(template,fraction,levermann,output)
-  antnet=antdyn+antsmb
-  sheetdyn=greendyn+antdyn
-  landwater=project_landwater(template)
-# put expansion last because it has a lower dimensionality and we want it to
-# be broadcast to the same shape as the others rather than messing up gmslr
-  gmslr=glacier+greensmb+greendyn+antnet+landwater+expansion
-
 # Report the range of the final year and write output files if requested
   if output:
     output=output+"/"+scenario+"_"
     prefix="%-10s "%scenario
   else: prefix=''
-  report("temperature",temperature,output,prefix,realise,nr=nm)
-  report("expansion",expansion,output,prefix,realise,nr=nm)
-  report("glacier",glacier,output,prefix,realise)
-  report("greensmb",greensmb,output,prefix,realise)
-  report("antsmb",antsmb,output,prefix,realise)
-  report("greendyn",greendyn,output,prefix,realise,uniform=True)
-  report("antdyn",antdyn,output,prefix,realise,uniform=not levermann)
-  report("landwater",landwater,output,prefix,realise,uniform=True)
-  report("GMSLR",gmslr,output,prefix,realise)
-  report("greennet",greennet,output,prefix,realise)
-  report("antnet",antnet,output,prefix,realise)
-  report("sheetdyn",sheetdyn,output,prefix,realise)
+
+  temperature=zt
+  report("temperature",temperature,output,prefix,ensemble,nr=nm)
+
+  expansion=zx
+  expansion=report("expansion",expansion,output,prefix,ensemble,nr=nm)
+
+  glacier=project_glacier(zitmean,zit,template,glaciermip)
+#  gmslr=glacier
+  glacier=report("glacier",glacier,output,prefix,ensemble)
+
+  greensmb=project_greensmb(zt,template,palmer)
+#  gmslr+=greensmb
+#  gmslr.persist(inplace=True)
+  greensmb=report("greensmb",greensmb,output,prefix,ensemble)
+  greendyn=project_greendyn(scenario,template,palmer)
+#  gmslr+=greendyn
+#  gmslr.persist(inplace=True)
+  greendyn=report("greendyn",greendyn,output,prefix,ensemble,uniform=True)
+  greennet=greensmb+greendyn
+
+  fraction=numpy.random.rand(nm*nt) # correlation between antsmb and antdyn
+  antsmb=project_antsmb(zit,template,fraction)
+#  gmslr+=antsmb
+#  gmslr.persist(inplace=True)
+  antsmb=report("antsmb",antsmb,output,prefix,ensemble)
+  if levermann and not isinstance(levermann,str): levermann=scenario
+  antdyn=project_antdyn(template,fraction,levermann,output,palmer)
+  del(fraction)
+  gc.collect()
+#  gmslr+=antdyn
+#  gmslr.persist(inplace=True)
+  antdyn=report("antdyn",antdyn,output,prefix,ensemble,uniform=not levermann)
+  antnet=antsmb+antdyn
+
+  landwater=project_landwater(template,palmer)
+#  gmslr+=landwater
+#  gmslr.persist(inplace=True)
+  landwater=report("landwater",landwater,output,prefix,ensemble,uniform=True)
+
+# add expansion last because it has a lower dimensionality and we want it to
+# be broadcast to the same shape as the others rather than messing up gmslr
+#  gmslr+=zx
+#  gmslr.persist(inplace=True)
+  gmslr=glacier+greennet+antnet+landwater+expansion
+  report("GMSLR",gmslr,output,prefix,ensemble)
+
+  report("greennet",greennet,output,prefix,ensemble)
+  report("antnet",antnet,output,prefix,ensemble)
+  sheetdyn=greendyn+antdyn
+  report("sheetdyn",sheetdyn,output,prefix,ensemble)
 
   return
 
@@ -497,6 +542,7 @@ def project_glacier(it,zit,template,glaciermip):
 
   glacier+=dmz
   glacier.where(glacier>glmass,glmass,inplace=True)
+  glacier.persist(inplace=True)
 
   return glacier
 
@@ -505,7 +551,7 @@ def project_glacier1(it,factor,exponent):
   scale=1e-3 # mm to m
   return scale*factor*(it.where(it<0,0)**exponent)
 
-def project_greensmb(zt,template):
+def project_greensmb(zt,template,palmer=False):
 # Return projection of Greenland SMB contribution as a cf.Field
 # zt -- cf.Field, ensemble of temperature anomaly timeseries
 # template -- cf.Field with the required shape of the output
@@ -526,18 +572,25 @@ def project_greensmb(zt,template):
   
   ztgreen=zt-dtgreen
   greensmbrate=ff*fettweis(ztgreen)
+  del(ff)
 
-  greensmb=greensmbrate.cumsum('T',coordinate='maximum')
+  if palmer and greensmbrate.construct('T').year.max()>endofAR5:
+    indices=greensmbrate.indices(T=cf.year(cf.gt(endofAR5)))
+    greensmbrate[indices]=greensmbrate.subspace(T=cf.year(endofAR5))
+
+  greensmb=greensmbrate.cumsum('T')
+  del(greensmbrate)
   greensmb.del_construct('T')
   greensmb.set_construct(template.dim('T'))
-  greensmb+=(1-fgreendyn())*dgreen()
+  greensmb+=(1-fgreendyn)*dgreen
+  greensmb.persist(inplace=True)
 
   return greensmb
 
 def fettweis(ztgreen):
 # Greenland SMB in m yr-1 SLE from global mean temperature anomaly
 # using Eq 2 of Fettweis et al. (2013)
-  return (71.5*ztgreen+20.4*(ztgreen**2)+2.8*(ztgreen**3))*mSLEoGt()
+  return (71.5*ztgreen+20.4*(ztgreen**2)+2.8*(ztgreen**3))*mSLEoGt
 
 def project_antsmb(zit,template,fraction=None):
 # Return projection of Antarctic SMB contribution as a cf.Field
@@ -558,7 +611,7 @@ def project_antsmb(zit,template,fraction=None):
   pcoKg=(pcoK[0]+numpy.random.standard_normal([nr,nt])*pcoK[1])*\
     (KoKg[0]+numpy.random.standard_normal([nr,nt])*KoKg[1])
   meansmb=1923 # model-mean time-mean 1979-2010 Gt yr-1 from 13.3.3.2
-  moaoKg=-pcoKg*1e-2*meansmb*mSLEoGt() # m yr-1 of SLE per K of global warming
+  moaoKg=-pcoKg*1e-2*meansmb*mSLEoGt # m yr-1 of SLE per K of global warming
 
   if fraction is None:
     fraction=numpy.random.rand(nr,nt)
@@ -583,7 +636,7 @@ def project_antsmb(zit,template,fraction=None):
 
   return antsmb
 
-def project_greendyn(scenario,template):
+def project_greendyn(scenario,template,palmer=False):
 # Return projection of Greenland rapid ice-sheet dynamics contribution
 # as a cf.Field
 # scenario -- str, name of scenario
@@ -596,10 +649,11 @@ def project_greendyn(scenario,template):
     finalrange=[0.020,0.085]
   else:
     finalrange=[0.014,0.063]
-  return time_projection(0.63*fgreendyn(),\
-    0.17*fgreendyn(),finalrange,template)+fgreendyn()*dgreen()
+  return time_projection(0.63*fgreendyn,\
+    0.17*fgreendyn,finalrange,template,palmer=palmer)+fgreendyn*dgreen
 
-def project_antdyn(template,fraction=None,levermann=None,output=None):
+def project_antdyn(template,fraction=None,levermann=None,output=None,
+palmer=False):
 # Return projection of Antarctic rapid ice-sheet dynamics contribution
 # as a cf.Field
 # template -- cf.Field with the required shape of the output
@@ -613,7 +667,7 @@ def project_antdyn(template,fraction=None,levermann=None,output=None):
       rcp85=[-2.399, 0.860, 0.000])
     if levermann not in lcoeff:
       raise ProjectionError(levermann+' is not available for Levermann')
-    report('using Levermann '+levermann+' for antdyn',output=output)
+    print('using Levermann '+levermann+' for antdyn')
     lcoeff=lcoeff[levermann]
 
     ascale=norm.ppf(1-fraction)
@@ -624,46 +678,49 @@ def project_antdyn(template,fraction=None,levermann=None,output=None):
 # For SMB+dyn during 2005-2010 Table 4.6 gives 0.41+-0.24 mm yr-1 (5-95% range)
 # For dyn at 2100 Chapter 13 gives [-20,185] mm for all scenarios
 
-  return time_projection(0.41,0.20,final,template,fraction=fraction)+\
-    dant()
+  return time_projection(0.41,0.20,final,template,
+    palmer=palmer,fraction=fraction)+dant
 
-def project_landwater(template):
+def project_landwater(template,palmer=False):
 # Return projection of land water storage contribution as a cf.Field
 
 # The rate at start is the one for 1993-2010 from the budget table.
 # The final amount is the mean for 2081-2100.
   nyr=2100-2081+1 # number of years of the time-mean of the final amount
 
-  return time_projection(0.38,0.49-0.38,[-0.01,0.09],template,nyr)
+  return time_projection(0.38,0.49-0.38,[-0.01,0.09],template,
+    nfinal=nyr,palmer=palmer)
 
-def time_projection(startratemean,startratepm,final,template,\
-  nfinal=1,fraction=None):
+def time_projection(startratemean,startratepm,final,template,
+  nfinal=1,fraction=None,palmer=False):
 # Return projection of a quantity which is a quadratic function of time
 # in a cf.Field.
 # startratemean, startratepm -- rate of GMSLR at the start in mm yr-1, whose
 #   likely range is startratemean +- startratepm
-# final -- two-element list giving likely range in m for GMSLR at the end,
-#   or array-like, giving final values, of the same shape as fraction and
-#   assumed corresponding elements
+# final -- two-element list giving likely range in m for GMSLR at the endofAR5,
+#   or array-like, giving final values at that time, of the same shape as
+#   fraction and assumed corresponding elements
 # template -- cf.Field with the required shape of the output
 # nfinal -- int, optional, number of years at the end over which finalrange is
 #   a time-mean; by default 1 => finalrange is the value for the last year
 # fraction -- array-like, optional, random numbers in the range 0 to 1,
 #   by default uniformly distributed
 
-# Create a field of elapsed time in years
+# Create a field of elapsed time since start in years
   tdim=template.dim('T')
   timedata=tdim.year.data
-  timedata=timedata-timedata[0]+1 # years since start
+  timeendofAR5=endofAR5-timedata[0].datum()+1
+  timedata=timedata-timedata[0]+1
   time=cf.Field()
   time.set_construct(template.axis('T'))
   time.set_construct(tdim)
   time.set_data(timedata)
+# nyr=template.axis('T').size # not correct if going beyond endofAR5
+  nyr=timeendofAR5
 
 # more general than nr,nt,nyr=template.shape
   nr=template.axis('axiscomp').size
   nt=template.axis('axisclim').size
-  nyr=template.axis('T').size
   if fraction is None:
     fraction=numpy.random.rand(nr,nt)
   elif fraction.size!=nr*nt:
@@ -678,38 +735,49 @@ def time_projection(startratemean,startratepm,final,template,\
   fraction.set_data(data)
 
 # Convert inputs to startrate (m yr-1) and afinal (m), where both are 2-element
-# arrays if finalisrange, otherwise both are arrays with the dimension of fraction
+# arrays if finalisrange, otherwise both are arrays with the size of fraction
   momm=1e-3 # convert mm yr-1 to m yr-1
   startrate=(startratemean+\
-    startratepm*numpy.array([-1,1],dtype=numpy.float))*momm
+    startratepm*numpy.array([-1,1],dtype=float))*momm
   finalisrange=isinstance(final,Sequence)
   if finalisrange:
     if len(final)!=2:
       raise ProjectionError('final range is the wrong size')
-    afinal=numpy.array(final,dtype=numpy.float)
+#    afinal=numpy.array(final,dtype=float)  
+    afinal=(1-fraction)*final[0]+fraction*final[1]
   else:
     if final.shape!=fraction.shape:
       raise ProjectionError('final array is the wrong shape')
     afinal=fraction.copy()
     afinal.set_data(cf.Data(final))
-    startrate=(1-fraction)*startrate[0]+fraction*startrate[1]
+  startrate=(1-fraction)*startrate[0]+fraction*startrate[1]
 
 # For terms where the rate increases linearly in time t, we can write GMSLR as
 #   S(t) = a*t**2 + b*t
 # where a is 0.5*acceleration and b is start rate. Hence
 #   a = S/t**2-b/t
-  finalyr=numpy.arange(nfinal)-nfinal+nyr+1 # last element ==nyr
 # If nfinal=1, the following is equivalent to
 # final/nyr**2-startrate/nyr
-  acceleration=(afinal-startrate*finalyr.mean())/(finalyr**2).mean()
+  finalyr=numpy.arange(nfinal)-nfinal+nyr+1 # last element ==nyr
+  halfacc=(afinal-startrate*finalyr.mean())/(finalyr**2).mean()
+  quadratic=halfacc*(time**2)
 
-  if finalisrange:
-# Calculate two-element list containing fields of the minimum and maximum
-# timeseries of projections, then calculate random ensemble within envelope
-    range=[float(acceleration[i])*(time**2)+float(startrate[i])*time \
-      for i in [0,1]]
-    projection=(1-fraction)*range[0]+fraction*range[1]
-  else:
-    projection=acceleration*(time**2)+startrate*time
+# If acceleration ceases for t>t0, the rate 2*a*t0+b thereafter, so
+#   S(t) = a*t0**2 + b*t0 + (2*a*t0+b)*(t-t0)
+#        = a*t0*(2*t - t0) + b*t
+# i.e. the quadratic term is replaced, the linear term unaffected
+  if palmer:
+    y=halfacc*timeendofAR5*(2*time-timeendofAR5)
+    y.persist(inplace=True)
+    quadratic.where(time<=timeendofAR5,y=y,inplace=True)
+  quadratic.persist(inplace=True)
+
+  linear=startrate*time
+  linear.persist(inplace=True)
+
+  projection=quadratic+linear
+  projection.persist(inplace=True)
+  del(linear,quadratic,time)
+  gc.collect()
 
   return projection
