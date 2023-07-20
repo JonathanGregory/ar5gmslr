@@ -17,6 +17,7 @@ import numpy
 from collections.abc import Sequence
 from scipy.stats import norm
 import gc
+import dask.array as da
 
 # First year of AR5 projections
 endofhistory=2006
@@ -46,7 +47,9 @@ def vlikely_range(data):
 # and dom1,... are any remaining axes of data.
 # NB model 5-95% range is judged to be "likely" for the AR5 projections
 # data -- array-like
-  return numpy.percentile(data,[50,5,95],0)
+# numpy.array() to convert masked array into unmasked, because percentile()
+# gives a warning if there are no non-masked elements
+  return numpy.percentile(numpy.array(data),[50,5,95],0)
 
 def actual_range(data):
 # Compute mean and actual range for the first (or only) axis of data
@@ -72,8 +75,7 @@ def report(quantity,field=None,output=None,prefix=None,ensemble=False,
 # prefix -- str, optional, a string which is written at the start of every
 #   line in the list file which is calculated from a field
 # ensemble -- bool, optional, write output files of the ensemble as well as
-#   the statistics. ensemble=True is assumed regardless of the parameter
-#   (this is a temporary arrangement).
+#   the statistics.
 # uniform -- bool, optional, indicates that the quantity has a uniform
 #   distribution, for which the likely range is given by the extrema; by
 #   default False, in which case the likely range is 5-95% (following the
@@ -82,10 +84,7 @@ def report(quantity,field=None,output=None,prefix=None,ensemble=False,
 # nr -- int, optional, indicates that each realisation on input should be
 #   replicated nr times on output to file
 
-#  if field.axis(-1,key=True)!='axistime':
-#    raise ProjectionError('time should be the last dimension')
-
-##  print(cf.free_memory()/1e9)
+##  print("free memory:", cf.free_memory() / 1e9, "GB")
   if not field:
     print(quantity)
     if output:
@@ -106,6 +105,7 @@ def report(quantity,field=None,output=None,prefix=None,ensemble=False,
   print(listline)
 
 # Optionally write output files
+  nyr=field.axis('T').size ## duplicate
   if output:
     listfile=os.path.dirname(output)+'/list'
     if prefix: listline=prefix+listline
@@ -151,7 +151,6 @@ def report(quantity,field=None,output=None,prefix=None,ensemble=False,
     statfield.set_construct(field.dim('T'))
     if quantity=="temperature": statfield.unit='K'
     else: statfield.unit='m'
-    statfield.ncvar=quantity
     statfield.nc_set_variable(quantity)
     statfield.set_data(cf.Data(numpy.empty(nyr)))
     stats=dict(mid=0,lower=1,upper=2)
@@ -159,43 +158,41 @@ def report(quantity,field=None,output=None,prefix=None,ensemble=False,
       statfield.data[:]=datarange[stats[stat],:]
       cf.write(statfield,output+quantity+"_"+stat+".nc")
 
-    realise=True # realise=ensemble once cf-python can cache
-    if realise:
-      if field.domain_axes('realization'): ofield=field
+  if output:
+    if field.domain_axes('realization'): ofield=field
+    else:
+      nt=field.axis('climate_realization').size
+      data = field.to_dask_array()
+      data = data.astype('float32')
+      data = data.reshape(-1, nyr)
+      if nr:
+        data = da.broadcast_to(data, (nr, nt, nyr),chunks=(nr // 10, -1, -1))
+        data = data.reshape(nr * nt, nyr)
       else:
-        nt=field.axis('climate_realization').size
-        data=numpy.asfarray(field.array.reshape(-1,nyr),dtype='float32')
-        if nr:
-          data=numpy.broadcast_to(data,(nr,nt,nyr)).copy()
-          data.shape=(nr*nt,nyr)
-        else:
-          nr=data.shape[0]//nt
-        ofield=cf.Field()
-        ofield.set_data(cf.Data(data))
-        ofield.set_construct(field.axis('T'))
-        ofield.set_construct(field.dim('T'))
-        ofield.set_construct(cf.DomainAxis(ofield.shape[0]))
-        realdim=cf.DimensionCoordinate(data=\
-          cf.Data(numpy.arange(ofield.shape[0],dtype='int32')),\
-          properties=dict(standard_name='realization'))
-        ofield.set_construct(realdim)
-        climaux=cf.AuxiliaryCoordinate(data=\
-          cf.Data(numpy.broadcast_to(numpy.arange(nt,dtype='int32'),\
-          (nr,nt)).reshape(nr*nt)),\
-          properties=dict(long_name='climate_realization'))
-        climaux.nc_set_variable('climate')
-        ofield.set_construct(climaux)
+        nr=data.shape[0]//nt
+      ofield=cf.Field()
+      ofield.set_data(cf.Data(data))
+      ofield.set_construct(field.axis('T'))
+      ofield.set_construct(field.dim('T'))
+      ofield.set_construct(cf.DomainAxis(ofield.shape[0]))
+      realdim=cf.DimensionCoordinate(
+        data=cf.Data(da.arange(ofield.shape[0], dtype="int32")),
+        properties=dict(standard_name="realization"))
+      ofield.set_construct(realdim)
+      climaux=cf.AuxiliaryCoordinate(
+        data=cf.Data(da.broadcast_to(
+        da.arange(nt, dtype="int32"), (nr, nt), chunks=(nr // 10, -1)
+        ).reshape(nr * nt)),
+        properties=dict(long_name='climate_realization'))
+      climaux.nc_set_variable('climate')
+      ofield.set_construct(climaux)
       if quantity in ["GMSLR","expansion","temperature"]:
         ofield.standard_name=statfield.standard_name
       else:
         ofield.long_name=statfield.long_name
       ofield.unit=statfield.unit
-      ofield.ncvar=quantity
-      ofield.nc_set_variable(quantity)
-      cf.write(ofield,output+quantity+".nc")
-      del(ofield)
-      gc.collect()
-      field=cf.read(output+quantity+".nc")[0]
+    ofield.nc_set_variable(quantity)
+    if ensemble: cf.write(ofield,output+quantity+".nc")
 
   return(field)
 
@@ -208,8 +205,11 @@ def project(input=None,scenarios=None,output=None,levermann=None,**kwargs):
 #   have a model dimension and are used if nt==0.
 # scenarios -- str or sequence of str, scenarios for which projections are to be
 #   made, by default all those represented in the input directory
-# output, str -- path to directory in which output files are to be written. It
-#   is created if it does not exist.
+# output, str, optional -- path to directory in which output files are to be
+#   written. It is created if it does not exist. No files are written if this
+#   argument is omitted.
+# ensemble -- bool, optional, default False, write output files of the ensemble
+#   as well as the statistics.
 # seed -- optional, for numpy.random, default zero
 # nt -- int, optional, number of realisations of the input timeseries for each
 #   scenario, default 450, to be generated using the mean and sd files; specify
@@ -239,8 +239,8 @@ def project(input=None,scenarios=None,output=None,levermann=None,**kwargs):
   if not os.path.isdir(input):
     raise ProjectionError('input must be an existing directory')
 
-  if output is None:
-    raise ProjectionError('output directory must be specified')
+##  if output is None:
+##    raise ProjectionError('output directory must be specified')
 
   if scenarios is None:
 # Obtain list of scenarios from the input filenames
@@ -381,7 +381,8 @@ def project_scenario(input,scenario,output=None,\
     zitmean=itin[0].collapse('mean','ncdim%model',squeeze=True)
     climaux=zt.aux('ncvar%model_name')
     nt=zt.axis('ncdim%model').size
-    climdim=cf.DimensionCoordinate(data=cf.Data(numpy.arange(nt)),\
+    climdim=cf.DimensionCoordinate(
+      data=cf.Data(da.arange(nt)),
       properties=dict(standard_name='climate_realization'))
     zt.set_construct(climdim)
     zx.set_construct(climdim)
@@ -392,7 +393,8 @@ def project_scenario(input,scenario,output=None,\
   else:
     z=cf.Field()
     z.set_construct(cf.DomainAxis(nt))
-    climdim=cf.DimensionCoordinate(data=cf.Data(numpy.arange(nt)),\
+    climdim=cf.DimensionCoordinate(
+      data=cf.Data(da.arange(nt)),
       properties=dict(standard_name='climate_realization'))
     z.set_construct(climdim)
     z.set_data(cf.Data(numpy.random.standard_normal(nt)*tcv))
@@ -431,42 +433,28 @@ def project_scenario(input,scenario,output=None,\
   expansion=report("expansion",expansion,output,prefix,ensemble,nr=nm)
 
   glacier=project_glacier(zitmean,zit,template,glaciermip)
-#  gmslr=glacier
   glacier=report("glacier",glacier,output,prefix,ensemble)
 
   greensmb=project_greensmb(zt,template,palmer)
-#  gmslr+=greensmb
-#  gmslr.persist(inplace=True)
   greensmb=report("greensmb",greensmb,output,prefix,ensemble)
   greendyn=project_greendyn(scenario,template,palmer)
-#  gmslr+=greendyn
-#  gmslr.persist(inplace=True)
   greendyn=report("greendyn",greendyn,output,prefix,ensemble,uniform=True)
   greennet=greensmb+greendyn
 
   fraction=numpy.random.rand(nm*nt) # correlation between antsmb and antdyn
   antsmb=project_antsmb(zit,template,fraction)
-#  gmslr+=antsmb
-#  gmslr.persist(inplace=True)
   antsmb=report("antsmb",antsmb,output,prefix,ensemble)
   if levermann and not isinstance(levermann,str): levermann=scenario
   antdyn=project_antdyn(template,fraction,levermann,output,palmer)
   del(fraction)
-  gc.collect()
-#  gmslr+=antdyn
-#  gmslr.persist(inplace=True)
   antdyn=report("antdyn",antdyn,output,prefix,ensemble,uniform=not levermann)
   antnet=antsmb+antdyn
 
   landwater=project_landwater(template,palmer)
-#  gmslr+=landwater
-#  gmslr.persist(inplace=True)
   landwater=report("landwater",landwater,output,prefix,ensemble,uniform=True)
 
 # add expansion last because it has a lower dimensionality and we want it to
 # be broadcast to the same shape as the others rather than messing up gmslr
-#  gmslr+=zx
-#  gmslr.persist(inplace=True)
   gmslr=glacier+greennet+antnet+landwater+expansion
   report("GMSLR",gmslr,output,prefix,ensemble)
 
@@ -583,7 +571,6 @@ def project_greensmb(zt,template,palmer=False):
   greensmb.del_construct('T')
   greensmb.set_construct(template.dim('T'))
   greensmb+=(1-fgreendyn)*dgreen
-  greensmb.persist(inplace=True)
 
   return greensmb
 
@@ -670,7 +657,7 @@ palmer=False):
     print('using Levermann '+levermann+' for antdyn')
     lcoeff=lcoeff[levermann]
 
-    ascale=norm.ppf(1-fraction)
+    ascale=norm.ppf(fraction)
     final=numpy.exp(lcoeff[2]*ascale**2+lcoeff[1]*ascale+lcoeff[0])
 
   else: final=[-0.020,0.185]
@@ -734,8 +721,8 @@ def time_projection(startratemean,startratepm,final,template,
   fraction.set_construct(template.dim('dimclim'))
   fraction.set_data(data)
 
-# Convert inputs to startrate (m yr-1) and afinal (m), where both are 2-element
-# arrays if finalisrange, otherwise both are arrays with the size of fraction
+# Convert inputs to startrate (m yr-1) and afinal (m), where both are
+# arrays with the size of fraction
   momm=1e-3 # convert mm yr-1 to m yr-1
   startrate=(startratemean+\
     startratepm*numpy.array([-1,1],dtype=float))*momm
@@ -755,29 +742,26 @@ def time_projection(startratemean,startratepm,final,template,
 # For terms where the rate increases linearly in time t, we can write GMSLR as
 #   S(t) = a*t**2 + b*t
 # where a is 0.5*acceleration and b is start rate. Hence
-#   a = S/t**2-b/t
-# If nfinal=1, the following is equivalent to
-# final/nyr**2-startrate/nyr
-  finalyr=numpy.arange(nfinal)-nfinal+nyr+1 # last element ==nyr
+#   a = S/t**2-b/t = (S-b*t)/t**2
+# If nfinal=1, the following two lines are equivalent to
+# halfacc=(final-startyr*nyr)/nyr**2
+  finalyr = da.arange(nfinal) - nfinal + nyr + 1  # last element ==nyr
   halfacc=(afinal-startrate*finalyr.mean())/(finalyr**2).mean()
   quadratic=halfacc*(time**2)
+  linear=startrate*time
 
-# If acceleration ceases for t>t0, the rate 2*a*t0+b thereafter, so
+# If acceleration ceases for t>t0, the rate is 2*a*t0+b thereafter, so
 #   S(t) = a*t0**2 + b*t0 + (2*a*t0+b)*(t-t0)
 #        = a*t0*(2*t - t0) + b*t
 # i.e. the quadratic term is replaced, the linear term unaffected
+# The quadratic also = a*t**2-a*(t-t0)**2
+
   if palmer:
     y=halfacc*timeendofAR5*(2*time-timeendofAR5)
     y.persist(inplace=True)
     quadratic.where(time<=timeendofAR5,y=y,inplace=True)
-  quadratic.persist(inplace=True)
-
-  linear=startrate*time
-  linear.persist(inplace=True)
 
   projection=quadratic+linear
   projection.persist(inplace=True)
-  del(linear,quadratic,time)
-  gc.collect()
 
   return projection
