@@ -94,7 +94,7 @@ This process takes about 2.5 minutes on a 3.4 GHz processor with 8 Gbyte RAM.
 The [`stdout`](https://github.com/JonathanGregory/ar5gmslr/blob/main/ar5gmslr_ar5.stdout.txt) is consistent (within 0.01 m)
 with Table 13.SM.1 of [AR5 chapter 13](https://www.ipcc.ch/site/assets/uploads/2018/07/WGI_AR5.Chap_.13_SM.1.16.14.pdf).
 The [`output` directory](https://github.com/JonathanGregory/ar5gmslr/tree/main/ar5gmslr_ar5) contains a [`list` file](https://github.com/JonathanGregory/ar5gmslr/blob/main/ar5gmslr_ar5/list) with the same summary as `stdout`.
-The output directory requires 9.7 Gbyte, mostly because of the CF-netCDF files on Monte Carlo ensemble members.
+If `ensemble=True` is specified, to produce CF-netCDF files of Monte Carlo ensemble members, the output directory requires 9.7 Gbyte.
 These files have not been included in this repository.
 
 Hermans et al. (2021) produced two sets of projections from CMIP6 ensemble
@@ -118,6 +118,6 @@ Palmer et al. (2020) made projections to 2300 using `tas` and `zostoga` estimate
 import ar5gmslr # includes 'import cf' for the cf-python package
 ar5gmslr.project('palmer20TLM_input',palmer=True,levermann=True,output='ar5gmslr_palmer20TLM')
 ```
-This repository contains the [`stdout`](https://github.com/JonathanGregory/ar5gmslr/blob/main/ar5gmslr_palmer20TLM.stdout.txt) and [`output` directory](https://github.com/JonathanGregory/ar5gmslr/tree/main/ar5gmslr_palmer20TLM). The output directory occupies 18 Gbyte in this case, including the files containing Monte Carlo ensemble members.
+This repository contains the [`stdout`](https://github.com/JonathanGregory/ar5gmslr/blob/main/ar5gmslr_palmer20TLM.stdout.txt) and [`output` directory](https://github.com/JonathanGregory/ar5gmslr/tree/main/ar5gmslr_palmer20TLM). The output directory occupies 18 Gbyte in this case if `ensemble=True` is specified.
 
 The program was written by [Jonathan Gregory](https://www.met.rdg.ac.uk/~jonathan) for the works cited above, some parts being originally in IDL and later translated to Python.
