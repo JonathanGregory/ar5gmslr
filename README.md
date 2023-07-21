@@ -56,11 +56,33 @@ GlacierMIP2 [(Marzeion et al.,
 more and later versions of global glacier models than were available at
 the time of the AR5.
 
-The program tabulates the results for 2100 on `stdout`, and generates CF-netCDF output files containing
-
-* annual timeseries of the median, 5- and 95-percentiles of the distributions
-of each contribution and the total. (The AR5 interprets the 5-95% range of
+The program tabulates the results for 2100 on `stdout`, in lines of the form
+"_quantity_ _mid_ `[` _lower_ `to` _upper_ `]`",
+where _mid_ is the median value, and _lower_ and _upper_ the 5- and 95-percentiles of the distributions
+of each contribution to GMSLR, identified by _quantity_, and the total. (The AR5 interprets the 5-95% range of
 GMSLR model projections as the assessed "likely range".)
+The contributions are the same as in AR5 chapter 13, thus:
+| _quantity_ | description |
+| --- | --- |
+| temperature | Surface temperature change `tas` from input |
+| expansion | Thermosteric SLR (thermal expansion) `zostoga` from input |
+| glacier | Glaciers, including those peripheral to the Greenland ice-sheet |
+| greensmb | Greenland ice-sheet surface mass balance, including the height-SMB feedback |
+| antsmb | Antarctic ice-sheet surface masss balance, including peripheral glaciers and the interaction between SMB change and outflow |
+| greendyn | Greenland ice-sheet rapid dynamics |
+| antdyn | Antarctic ice-sheet rapid dynamics |
+| landwater | Land water storage |
+| GMSLR | Global mean sea level rise |
+| greennet | Greenland ice sheet |
+| antnet | Antarctic ice sheet |
+| sheetdyn | Ice-sheet rapid dynamics |
+The contributions listed after GMSLR are sums of other contributions, and not separately included in the total
+(that would be double-counting) viz. `greennet` = `greensmb + greendyn`, `antnet` = `antsmb` + `antdyn`,
+and `sheetdyn` = `greendyn` + `antdyn`.
+
+The program optionally generates CF-netCDF output files containing
+
+* annual timeseries of the median, 5- and 95-percentiles of each contribution and the total GMSLR.
 
 * annual timeseries of the Monte Carlo ensemble members (by default 450,000)
 of each contribution and the total, arranged in the same order for each.
@@ -116,6 +138,7 @@ Palmer et al. (2020) made projections to 2300 using `tas` and `zostoga` estimate
 import ar5gmslr # includes 'import cf' for the cf-python package
 ar5gmslr.project('palmer20TLM_input',palmer=True,levermann=True,output='ar5gmslr_palmer20TLM')
 ```
-This repository contains the [`stdout`](https://github.com/JonathanGregory/ar5gmslr/blob/main/ar5gmslr_palmer20TLM.stdout.txt) and [`output` directory](https://github.com/JonathanGregory/ar5gmslr/tree/main/ar5gmslr_palmer20TLM). The output directory occupies 18 Gbyte in this case if `ensemble=True` is specified.
+
+This repository contains the [`stdout`](https://github.com/JonathanGregory/ar5gmslr/blob/main/ar5gmslr_palmer20TLM.stdout.txt) and [`output` directory](https://github.com/JonathanGregory/ar5gmslr/tree/main/ar5gmslr_palmer20TLM). The output directory occupies 18 Gbyte in this case if `ensemble=True` is specified. The components of GMSLR at 2300 differ by no more than 0.02 m from the results of Palmer et al. (2020) in the 5-percentile and the median and by 0.04 m in the 95-percentile, except for `sheetdyn`, which differs by up to 0.1 m in the 95-percentile.
 
 The program was written by [Jonathan Gregory](https://www.met.rdg.ac.uk/~jonathan) for the works cited above, some parts being originally in IDL and later translated to Python.
