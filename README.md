@@ -62,6 +62,7 @@ where _mid_ is the median value, and _lower_ and _upper_ the 5- and 95-percentil
 of each contribution to GMSLR, identified by _quantity_, and the total. (The AR5 interprets the 5-95% range of
 GMSLR model projections as the assessed "likely range".)
 The contributions are the same as in AR5 chapter 13, thus:
+
 | _quantity_ | description |
 | --- | --- |
 | temperature | Surface temperature change `tas` from input |
@@ -76,6 +77,7 @@ The contributions are the same as in AR5 chapter 13, thus:
 | greennet | Greenland ice sheet |
 | antnet | Antarctic ice sheet |
 | sheetdyn | Ice-sheet rapid dynamics |
+
 The contributions listed after GMSLR are sums of other contributions, and not separately included in the total
 (that would be double-counting) viz. `greennet` = `greensmb + greendyn`, `antnet` = `antsmb` + `antdyn`,
 and `sheetdyn` = `greendyn` + `antdyn`.
