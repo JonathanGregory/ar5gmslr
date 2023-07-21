@@ -1,10 +1,15 @@
-head	1.5;
+head	1.6;
 access;
 symbols;
 locks
-	jonathan:1.5; strict;
+	jonathan:1.6; strict;
 comment	@# @;
 
+
+1.6
+date	2023.07.21.09.33.44;	author jonathan;	state Exp;
+branches;
+next	1.5;
 
 1.5
 date	2023.07.20.21.40.34;	author jonathan;	state Exp;
@@ -37,9 +42,9 @@ desc
 @
 
 
-1.5
+1.6
 log
-@dask updates
+@ice-sheet components reordered
 @
 text
 @# GMSLR projection program used for IPCC WG1 AR5
@@ -481,18 +486,22 @@ def project_scenario(input,scenario,output=None,\
 
   greensmb=project_greensmb(zt,template,palmer)
   greensmb=report("greensmb",greensmb,output,prefix,ensemble)
-  greendyn=project_greendyn(scenario,template,palmer)
-  greendyn=report("greendyn",greendyn,output,prefix,ensemble,uniform=True)
-  greennet=greensmb+greendyn
 
   fraction=numpy.random.rand(nm*nt) # correlation between antsmb and antdyn
   antsmb=project_antsmb(zit,template,fraction)
   antsmb=report("antsmb",antsmb,output,prefix,ensemble)
+
+  greendyn=project_greendyn(scenario,template,palmer)
+  greendyn=report("greendyn",greendyn,output,prefix,ensemble,uniform=True)
+  greennet=greensmb+greendyn
+  del(greensmb)
+
   if levermann and not isinstance(levermann,str): levermann=scenario
   antdyn=project_antdyn(template,fraction,levermann,output,palmer)
   del(fraction)
   antdyn=report("antdyn",antdyn,output,prefix,ensemble,uniform=not levermann)
   antnet=antsmb+antdyn
+  del(antsmb)
 
   landwater=project_landwater(template,palmer)
   landwater=report("landwater",landwater,output,prefix,ensemble,uniform=True)
@@ -809,6 +818,21 @@ def time_projection(startratemean,startratepm,final,template,
   projection.persist(inplace=True)
 
   return projection
+@
+
+
+1.5
+log
+@dask updates
+@
+text
+@d440 5
+d448 1
+a449 3
+  fraction=numpy.random.rand(nm*nt) # correlation between antsmb and antdyn
+  antsmb=project_antsmb(zit,template,fraction)
+  antsmb=report("antsmb",antsmb,output,prefix,ensemble)
+d455 1
 @
 
 

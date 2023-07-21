@@ -437,18 +437,22 @@ def project_scenario(input,scenario,output=None,\
 
   greensmb=project_greensmb(zt,template,palmer)
   greensmb=report("greensmb",greensmb,output,prefix,ensemble)
-  greendyn=project_greendyn(scenario,template,palmer)
-  greendyn=report("greendyn",greendyn,output,prefix,ensemble,uniform=True)
-  greennet=greensmb+greendyn
 
   fraction=numpy.random.rand(nm*nt) # correlation between antsmb and antdyn
   antsmb=project_antsmb(zit,template,fraction)
   antsmb=report("antsmb",antsmb,output,prefix,ensemble)
+
+  greendyn=project_greendyn(scenario,template,palmer)
+  greendyn=report("greendyn",greendyn,output,prefix,ensemble,uniform=True)
+  greennet=greensmb+greendyn
+  del(greensmb)
+
   if levermann and not isinstance(levermann,str): levermann=scenario
   antdyn=project_antdyn(template,fraction,levermann,output,palmer)
   del(fraction)
   antdyn=report("antdyn",antdyn,output,prefix,ensemble,uniform=not levermann)
   antnet=antsmb+antdyn
+  del(antsmb)
 
   landwater=project_landwater(template,palmer)
   landwater=report("landwater",landwater,output,prefix,ensemble,uniform=True)
