@@ -56,7 +56,7 @@ GlacierMIP2 [(Marzeion et al.,
 more and later versions of global glacier models than were available at
 the time of the AR5.
 
-The program tabulates the results for 2100 on `stdout`, in lines of the form
+The program tabulates the results for the final year (2100 in this case) on `stdout`, in lines of the form
 "_quantity_ _mid_ `[` _lower_ `to` _upper_ `]`",
 where _mid_ is the median value, and _lower_ and _upper_ the 5- and 95-percentiles of the distributions
 of each contribution to GMSLR, identified by _quantity_, and the total. (The AR5 interprets the 5-95% range of
