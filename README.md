@@ -80,8 +80,6 @@ The program uses the freely available [`cf-python`
 package](https://ncas-cms.github.io/cf-python) for input and output of netCDF
 files and for convenience in manipulating the data in memory.
 It requires cf-python version 3.14.0 (2023-01-31) or later, which uses `dask`.
-There is currently a harmless bug which repeatedly produces an annoying message: `UserWarning: Warning: 'partition' will ignore the 'mask' of the MaskedArray. arr.partition(`.
-Please ignore this.
 
 To run the program for AR5 input using all defaults:
 
